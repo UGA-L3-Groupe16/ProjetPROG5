@@ -57,9 +57,9 @@ int in_a_privileged_mode(registers r) {
 
 uint32_t read_register(registers r, uint8_t reg) {
     uint32_t value=0;
-    if (reg == SPSR){
+    if (reg == r->spsr){
       value=read_spsr(r);
-    } else if (reg == CPSR){
+    } else if (reg == r->cpsr){
       value=read_cpsr(r);
     } else {
       value=r->R[reg];
@@ -69,7 +69,7 @@ uint32_t read_register(registers r, uint8_t reg) {
 
 uint32_t read_usr_register(registers r, uint8_t reg) {
     uint32_t value=0;
-    if (reg == CPSR){
+    if (reg == r->cpsr){
       value=read_cpsr(r);
     } else {
       value=r->R[reg];
@@ -88,9 +88,9 @@ uint32_t read_spsr(registers r) {
 }
 
 void write_register(registers r, uint8_t reg, uint32_t value) {
-  if (reg == SPSR){
+  if (reg == r->spsr){
     write_spsr(r,value);
-  } else if (reg == CPCR){
+  } else if (reg == r->cpsr){
     write_cpsr(r,value);
   } else {
     r->R[reg]=value;
@@ -98,7 +98,7 @@ void write_register(registers r, uint8_t reg, uint32_t value) {
 }
 
 void write_usr_register(registers r, uint8_t reg, uint32_t value) {
-  if (reg == CPCR){
+  if (reg == r->cpsr){
     write_cpsr(r,value);
   } else {
     r->R[reg]=value;
