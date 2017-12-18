@@ -25,40 +25,114 @@ Contact: Guillaume.Huard@imag.fr
 #include "util.h"
 
 struct memory_data {
+	uint8_t *memory;
+	size_t	size;
+	int		endianess;
 };
 
+typedef struct memory_data memory_data;
+
 memory memory_create(size_t size, int is_big_endian) {
-    memory mem=NULL;
+    memory mem = (memory)malloc(sizeof(memory_data));
+	mem->memory = (uint8_t*)malloc(sizeof(uint8_t)*size);
+	mem->size = size;
+	mem->endianess = is_big_endian;
     return mem;
 }
 
 size_t memory_get_size(memory mem) {
-    return 0;
+	return mem->size;
 }
 
 void memory_destroy(memory mem) {
+	free(mem->memory);
+	free(mem);
 }
 
 int memory_read_byte(memory mem, uint32_t address, uint8_t *value) {
-    return -1;
+	if(address >= mem->size)
+		return -1;
+	else {
+		*value = mem->memory[address];
+		return 0;
+	}
 }
 
 int memory_read_half(memory mem, uint32_t address, uint16_t *value) {
-    return -1;
+	if(address+1 >= mem->size)
+		return -1;
+	else {
+		*value = 0;
+		if(mem->endianess) { // Big endian
+			*value += mem->memory[address] << 8;
+			*value += mem->memory[address+1];
+		} else { // Little endian
+			*value += mem->memory[address+1] << 8;
+			*value += mem->memory[address];
+		}
+		return 0;
+	}
 }
 
 int memory_read_word(memory mem, uint32_t address, uint32_t *value) {
-    return -1;
+	if(address+3 >= mem->size)
+		return -1;
+	else {
+		*value = 0;
+		if(mem->endianess) { // Big endian
+			*value += mem->memory[address] << 24;
+			*value += mem->memory[address+1] << 16;
+			*value += mem->memory[address+2] << 8;
+			*value += mem->memory[address+3];
+		} else { // Little endian
+			*value += mem->memory[address+3] << 24;
+			*value += mem->memory[address+2] << 16;
+			*value += mem->memory[address+1] << 8;
+			*value += mem->memory[address];
+		}
+		return 0;
+	}
 }
 
 int memory_write_byte(memory mem, uint32_t address, uint8_t value) {
-    return -1;
+	if(address >= mem->size)
+		return -1;
+	else {
+		mem->memory[address] = value;
+		return 0;
+	}
 }
 
 int memory_write_half(memory mem, uint32_t address, uint16_t value) {
-    return -1;
+	if(address+1 >= mem->size)
+		return -1;
+	else {
+		if(mem->endianess) { // Big endian
+			mem->memory[address] = (value & (0xFF << 8)) >> 8;
+			mem->memory[address+1] = value & 0xFF;
+		} else { // Little endian
+			mem->memory[address+1] = (value & (0xFF << 8)) >> 8;
+			mem->memory[address] = value & 0xFF;
+		}
+		return 0;
+	}
 }
 
 int memory_write_word(memory mem, uint32_t address, uint32_t value) {
-    return -1;
+	if(address+3 >= mem->size)
+		return -1;
+	else {
+		if(mem->endianess) { // Big endian
+			mem->memory[address] = (value & (0xFF << 24)) >> 24;
+			mem->memory[address+1] = (value & (0xFF << 16)) >> 16;
+			mem->memory[address+2] = (value & (0xFF << 8)) >> 8;
+			mem->memory[address+3] = value & 0xFF;
+		} else { // Little endian
+			mem->memory[address+3] = (value & (0xFF << 24)) >> 24;
+			mem->memory[address+2] = (value & (0xFF << 16)) >> 16;
+			mem->memory[address+1] = (value & (0xFF << 8)) >> 8;
+			mem->memory[address] = value & 0xFF;
+		}
+		return 0;
+	}
 }
