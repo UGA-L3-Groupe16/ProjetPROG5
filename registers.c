@@ -29,13 +29,12 @@ struct registers_data {
   uint32_t R[16];
   uint32_t cpsr;
   uint32_t spsr;
-  uint8_t mode;
 };
 
 registers registers_create() {
     registers r = malloc(sizeof(struct registers_data));
     r->R[15]=0;
-    r->mode=16;
+    r->cpsr=USR;
     return r;
 }
 
@@ -48,11 +47,11 @@ uint8_t get_mode(registers r) {
 }
 
 int current_mode_has_spsr(registers r) {
-    return ((r->mode!=USR)&&(r->mode!=SYS));
+    return (((r->cpsr)&0X1F!=USR)&&((r->cpsr)&0X1F!=SYS));
 }
 
 int in_a_privileged_mode(registers r) {
-    return r->mode!=USR;
+    return ((r->cpsr)&0X1F!=USR);
 }
 
 uint32_t read_register(registers r, uint8_t reg) {
@@ -68,6 +67,9 @@ uint32_t read_register(registers r, uint8_t reg) {
 }
 
 uint32_t read_usr_register(registers r, uint8_t reg) {
+   if(reg==r->spsr)
+   return 0;
+   
     uint32_t value=0;
     if (reg == r->cpsr){
       value=read_cpsr(r);
@@ -98,6 +100,8 @@ void write_register(registers r, uint8_t reg, uint32_t value) {
 }
 
 void write_usr_register(registers r, uint8_t reg, uint32_t value) {
+  if(reg==r->spsr)
+   return;
   if (reg == r->cpsr){
     write_cpsr(r,value);
   } else {
