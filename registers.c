@@ -70,10 +70,10 @@ uint32_t read_usr_register(registers r, uint8_t reg) {
 	uint32_t value=0;
 	if (reg == CPSR){
       value=read_cpsr(r);
-    } else {
-      value=r->R[reg];
-    }
-    return value;
+  } else {
+    value=r->R[reg];
+  }
+  return value;
 }
 
 uint32_t read_cpsr(registers r) {
@@ -97,7 +97,7 @@ void write_register(registers r, uint8_t reg, uint32_t value) {
 }
 
 void write_usr_register(registers r, uint8_t reg, uint32_t value) {
-  if (reg == r->cpsr){
+  if (reg == CPSR){
     write_cpsr(r,value);
   } else {
     r->R[reg]=value;
