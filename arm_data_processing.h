@@ -28,4 +28,9 @@ Contact: Guillaume.Huard@imag.fr
 int arm_data_processing_shift(arm_core p, uint32_t ins);
 int arm_data_processing_immediate_msr(arm_core p, uint32_t ins);
 
+// Fonction a nous
+uint32_t plage(uint32_t val, uint8_t de, uint8_t a) {
+	return (val & ((~0 >> 32-(a-de+1))) << de) >> de;
+}
+
 #endif

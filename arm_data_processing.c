@@ -20,6 +20,7 @@ Contact: Guillaume.Huard@imag.fr
 	 700 avenue centrale, domaine universitaire
 	 38401 Saint Martin d'Hères
 */
+
 #include "arm_data_processing.h"
 #include "arm_exception.h"
 #include "arm_constants.h"
@@ -29,9 +30,27 @@ Contact: Guillaume.Huard@imag.fr
 
 /* Decoding functions for different classes of instructions */
 int arm_data_processing_shift(arm_core p, uint32_t ins) {
+	uint32_t opcode = plage(ins, 21, 24);
+	uint8_t rn = (uint8_t)plage(ins, 16, 19);
+	uint8_t	rd = (uint8_t)plage(ins, 12, 15);
     return UNDEFINED_INSTRUCTION;
 }
 
+int 
+
 int arm_data_processing_immediate_msr(arm_core p, uint32_t ins) {
+    return UNDEFINED_INSTRUCTION;
+}
+
+int arm_shift(arm_core p, uint32_t inst, uint8_t rn, uint8_t rd) {
+/*
+	uint32_t shift = plage(ins, 5, 5); // 1 = Right, 0 = Left
+
+	if(!plage(ins, 4, 4)) { // Valeur immediate
+		uint32_t shift_amount = plage(ins, 7, 11);
+	} else {
+		uint8_t rs = (uint8_t)plage(ins, 8, 11);
+	}
+	write_regis*/
     return UNDEFINED_INSTRUCTION;
 }

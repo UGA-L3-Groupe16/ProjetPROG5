@@ -28,8 +28,88 @@ Contact: Guillaume.Huard@imag.fr
 #include "arm_constants.h"
 #include "util.h"
 
+#define EQ 		0x0000
+#define NE 		0x0001
+#define CS		0x0010
+#define CC		0x0011
+#define MI 		0x0100
+#define PL		0x0101
+#define VS		0x0110
+#define VC 		0x0111
+#define HI		0x1000
+#define LS		0x1001
+#define GE		0x1010
+#define LT		0x1011
+#define GT		0x1100
+#define LE		0x1101
+#define AL		0x1110
+#define EUUUH	0x1111
+
 static int arm_execute_instruction(arm_core p) {
-    return 0;
+	int result;
+	uint32_t value;
+	result = arm_fetch(p, &value);
+	uint32_t cond = plage(value, 28, 31);
+	uint32_t cpsr = read_cpsr(p->reg);
+	
+	switch(cond) {
+		case EQ:	if(!Z)	return 0;
+			break;
+		case NE:	if(Z)	return 0;
+			break;
+		case CS:	if(!C)	return 0;
+			break;
+		case CC:	if(C)	return 0;
+			break;
+		case MI:	if(!N)	return 0;
+			break;
+		case PL:	if(N)	return 0;
+			break;
+		case VS:	if(!V)	return 0;
+			break;
+		case VC:	if(V)	return 0;
+			break;
+		case HI:	if(!(C && !Z))	return 0;
+			break;
+		case LS:	if(C && !Z)	return 0;
+			break;
+		case GE:	if(!(N == V))	return 0;
+			break;
+		case LT:	if(N == V)	return 0;
+			break;
+		case GT:	if(!(Z == 0 && N == V))	return 0;
+			break;
+		case LE:	if(Z== 1 || N!= V)	return 0;
+			break;
+		case AL:	
+			break;
+		case EUUUH:	return 0;
+			break;
+		default:	// On rentrera jamais la dedans
+			break;
+	}
+	switch(plage(value, 25, 27)) {
+		case 0x000:
+			arm_data_processing(p, value);
+			break;
+		case 0x001:
+			break;
+		case 0x010:
+			break;
+		case 0x011:
+			break;
+		case 0x100:
+			break;
+		case 0x101:
+			break;
+		case 0x110:
+			break;
+		case 0x111:
+			break;
+		default:
+			break;
+	}
+    return result;
 }
 
 int arm_step(arm_core p) {
