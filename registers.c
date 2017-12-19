@@ -43,22 +43,22 @@ free(r);
 }
 
 uint8_t get_mode(registers r) {
-    return r->mode;
+    return (r->cpsr)&0X1F;
 }
 
 int current_mode_has_spsr(registers r) {
-    return (((r->cpsr)&0X1F!=USR)&&((r->cpsr)&0X1F!=SYS));
+    return (get_mode(r)!=USR)&&(get_mode(r)!=SYS));
 }
 
 int in_a_privileged_mode(registers r) {
-    return ((r->cpsr)&0X1F!=USR);
+    return (get_mode(r)!=USR);
 }
 
 uint32_t read_register(registers r, uint8_t reg) {
     uint32_t value=0;
-    if (reg == r->spsr){
+    if (reg == SPSR){
       value=read_spsr(r);
-    } else if (reg == r->cpsr){
+    } else if (reg == CPSR){
       value=read_cpsr(r);
     } else {
       value=r->R[reg];
@@ -67,11 +67,8 @@ uint32_t read_register(registers r, uint8_t reg) {
 }
 
 uint32_t read_usr_register(registers r, uint8_t reg) {
-   if(reg==r->spsr)
-   return 0;
-   
-    uint32_t value=0;
-    if (reg == r->cpsr){
+	uint32_t value=0;
+	if (reg == CPSR){
       value=read_cpsr(r);
     } else {
       value=r->R[reg];
@@ -90,9 +87,9 @@ uint32_t read_spsr(registers r) {
 }
 
 void write_register(registers r, uint8_t reg, uint32_t value) {
-  if (reg == r->spsr){
+  if (reg == SPSR){
     write_spsr(r,value);
-  } else if (reg == r->cpsr){
+  } else if (reg == CPSR){
     write_cpsr(r,value);
   } else {
     r->R[reg]=value;
@@ -100,8 +97,6 @@ void write_register(registers r, uint8_t reg, uint32_t value) {
 }
 
 void write_usr_register(registers r, uint8_t reg, uint32_t value) {
-  if(reg==r->spsr)
-   return;
   if (reg == r->cpsr){
     write_cpsr(r,value);
   } else {
