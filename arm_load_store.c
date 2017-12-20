@@ -45,7 +45,7 @@ void Op_bit_I(arm_core p, uint32_t address, uint16_t offset, uint32_t ins){
 	//Registre
 
 		reg_offset = get_bits(ins, 3, 0);
-		offset = read_register(p->reg, reg_offset);
+		offset = arm_read_register(p, reg_offset);
 		address = Op_bit_U(address, offset, ins);
 	} else {
 	//Immediat
@@ -73,7 +73,7 @@ void Op_bit_22(arm_core p, uint32_t address, uint16_t offset, uint32_t ins){
 	//Registre
 
 		reg_offset = get_bits(ins, 3, 0);
-		offset = read_register(p->reg, reg_offset);
+		offset = arm_read_register(p, reg_offset);
 		address = Op_bit_U(address, offset, ins);
 	}
 }
@@ -89,7 +89,7 @@ void Op_bit_W(arm_core p, uint32_t address, uint16_t offset, uint32_t ins, uint8
 	if (get_bit(ins, 21)){
 	//Pre-indexed addressing -> enregistrement dans le registre
 
-		write_register(p->reg, dest, address);
+		arm_write_register(p, dest, address);
 	}
 }
 
@@ -97,19 +97,20 @@ int store(arm_core p , uint32_t ins, uint8_t source, uint8_t dest, uint32_t addr
 	uint32_t value;			//Valeur stockée, word
 	uint16_t value_half;	//Valeur stockée, half-word
 	uint8_t value_byte;		//Valeur stockée, byte
+	uint16_t offset;
 	int success;
 
-	if (get_bit(ins, 26){
+	if (get_bit(ins, 26)){
 		//STR / STRB
 
 		if (get_bit(ins, 22)){		
 		//STRB
 
-			value_byte = (read_register(p->reg, source)) & 0xFF;
+			value_byte = (arm_read_register(p, source)) & 0xFF;
 		} else {	
 		//STR
 
-			value = read_register(p->reg, source);
+			value = arm_read_register(p, source);
 		}
 		if (get_bit(ins, 24)){	
 		//Pre-indexed addressing / offset addressing
@@ -118,11 +119,11 @@ int store(arm_core p , uint32_t ins, uint8_t source, uint8_t dest, uint32_t addr
 			if (get_bit(ins, 22)){
 			//STRB
 
-				success = memory_write_byte(p->mem, address, value_byte);
+				success = arm_write_byte(p, address, value_byte);
 			} else {	
 			//STR
 
-				success = memory_write_word(p->mem, address, value);
+				success = arm_write_word(p, address, value);
 			}
 		} else {	
 		//Post-indexed addressing
@@ -130,30 +131,30 @@ int store(arm_core p , uint32_t ins, uint8_t source, uint8_t dest, uint32_t addr
 			if (get_bit(ins, 22)){		
 			//STRB
 
-				success = memory_write_byte(p->mem, address, value_byte);
+				success = arm_write_byte(p, address, value_byte);
 			} else {	
 			//STR
 
-				success = memory_write_word(p->mem, address, value);
+				success = arm_write_word(p, address, value);
 			}
 			Op_bit_I(p, address, offset, ins);
-			write_register(p->reg, dest, address);					
+			arm_write_register(p, dest, address);					
 		}
 	} else {	
 	//STRH
 
-		value_half = (read_register(p->reg, source)) & 0xFFFF;
+		value_half = (arm_read_register(p, source)) & 0xFFFF;
 		if (get_bit(ins, 24)){	
 		//Pre-indexed addressing / offset addressing
 
 			Op_bit_W(p, address, offset, ins, dest);
-			success = memory_write_half(p->mem, address, value_half);
+			success = arm_write_half(p, address, value_half);
 		} else {	
 		//Post-indexed addressing		
 
-			success = memory_write_half(p->mem, address, value_half);
+			success = arm_write_half(p, address, value_half);
 			Op_bit_22(p, address, offset, ins);
-			write_register(p->reg, dest, address);
+			arm_write_register(p, dest, address);
 		}
 	}
 	return success;
@@ -171,11 +172,11 @@ int arm_load_store(arm_core p, uint32_t ins) {
 
 	source = get_bits(ins, 19, 16);
 	dest = get_bits(ins, 15, 12);
-	address = read_register(p->reg, dest);
+	address = arm_read_register(p, dest);
 	if (get_bit(ins, 20)){	
 	//LOAD
 
-		success = load(p, ins, source, dest, address);
+		//success = load(p, ins, source, dest, address);
 	} else {
 	//STORE
 
