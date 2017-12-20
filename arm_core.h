@@ -27,6 +27,7 @@ Contact: Guillaume.Huard@imag.fr
 #include <stdio.h>
 #include "memory.h"
 
+
 typedef struct arm_core_data *arm_core;
 
 void arm_init();

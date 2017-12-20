@@ -1,0 +1,16 @@
+COMP=arm-none-eabi-gcc
+COMP-FLAGS=-mbig-endian -g -O2
+LD=arm-none-eabi-gcc -mbig-endian -g -O2 -nostdlib -T ./linker_script -n --entry main -Wl,-EB
+
+EXECUTABLES: exOP
+
+all: $(EXECUTABLES)
+
+exOP: exOP.o
+	$(LD) -o $@ $^
+
+%.o: %.s
+	$(COMP) $(COMP-FLAGS) -c -o $@ $<
+
+clean:
+	rm -rf $(EXECUTABLES) $(EXECUTABLES).o

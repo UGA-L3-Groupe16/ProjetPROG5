@@ -26,6 +26,7 @@ Contact: Guillaume.Huard@imag.fr
 #include "arm_load_store.h"
 #include "arm_branch_other.h"
 #include "arm_constants.h"
+#include "arm_core.h"
 #include "util.h"
 
 #define EQ 		0x0000
@@ -49,37 +50,38 @@ static int arm_execute_instruction(arm_core p) {
 	int result;
 	uint32_t value;
 	result = arm_fetch(p, &value);
-	uint32_t cond = plage(value, 28, 31);
-	uint32_t cpsr = read_cpsr(p->reg);
+	uint32_t cond = get_bits(value, 31, 28);
+	uint32_t cpsr = arm_read_cpsr(p);
+	printf("%x", value);
 	
 	switch(cond) {
-		case EQ:	if(!Z)	return 0;
+		case EQ:	if(!get_bit(cpsr, Z))	return 0;
 			break;
-		case NE:	if(Z)	return 0;
+		case NE:	if(get_bit(cpsr,Z))	return 0;
 			break;
-		case CS:	if(!C)	return 0;
+		case CS:	if(!get_bit(cpsr,C))	return 0;
 			break;
-		case CC:	if(C)	return 0;
+		case CC:	if(get_bit(cpsr,C))	return 0;
 			break;
-		case MI:	if(!N)	return 0;
+		case MI:	if(!get_bit(cpsr,N))	return 0;
 			break;
-		case PL:	if(N)	return 0;
+		case PL:	if(get_bit(cpsr,N))	return 0;
 			break;
-		case VS:	if(!V)	return 0;
+		case VS:	if(!get_bit(cpsr,V))	return 0;
 			break;
-		case VC:	if(V)	return 0;
+		case VC:	if(get_bit(cpsr,V))	return 0;
 			break;
-		case HI:	if(!(C && !Z))	return 0;
+		case HI:	if(!(get_bit(cpsr,C) && !get_bit(cpsr,Z)))	return 0;
 			break;
-		case LS:	if(C && !Z)	return 0;
+		case LS:	if(get_bit(cpsr,C) && !get_bit(cpsr,Z))	return 0;
 			break;
-		case GE:	if(!(N == V))	return 0;
+		case GE:	if(!(get_bit(cpsr,N) == get_bit(cpsr,V)))	return 0;
 			break;
-		case LT:	if(N == V)	return 0;
+		case LT:	if(get_bit(cpsr,N) == get_bit(cpsr,V))	return 0;
 			break;
-		case GT:	if(!(Z == 0 && N == V))	return 0;
+		case GT:	if(!(get_bit(cpsr,Z) == 0 && get_bit(cpsr,N) == get_bit(cpsr,V)))	return 0;
 			break;
-		case LE:	if(Z== 1 || N!= V)	return 0;
+		case LE:	if(get_bit(cpsr,Z) == 1 || get_bit(cpsr,N) != get_bit(cpsr,V))	return 0;
 			break;
 		case AL:	
 			break;
@@ -88,21 +90,20 @@ static int arm_execute_instruction(arm_core p) {
 		default:	// On rentrera jamais la dedans
 			break;
 	}
-	switch(plage(value, 25, 27)) {
-		case 0x000:
-			arm_data_processing(p, value);
+	switch(get_bits(value, 27, 25)) {
+		case 0x000:	arm_data_processing_shift(p, value);
 			break;
-		case 0x001:
+		case 0x001:	arm_data_processing_immediate_msr(p, value);	
 			break;
-		case 0x010:
+		case 0x010:	arm_load_store(p, value);
 			break;
-		case 0x011:
+		case 0x011: arm_load_store(p, value);
 			break;
-		case 0x100:
+		case 0x100:	arm_load_store_multiple(p, value);
 			break;
-		case 0x101:
+		case 0x101: arm_branch(p, value);
 			break;
-		case 0x110:
+		case 0x110:	arm_coprocessor_load_store(p, value);
 			break;
 		case 0x111:
 			break;

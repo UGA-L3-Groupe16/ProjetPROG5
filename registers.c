@@ -91,7 +91,7 @@ void write_register(registers r, uint8_t reg, uint32_t value) {
     write_spsr(r,value);
   } else if (reg == CPSR){
     write_cpsr(r,value);
-  } else {
+  } else if(reg) {
     r->R[reg]=value;
   }
 }
