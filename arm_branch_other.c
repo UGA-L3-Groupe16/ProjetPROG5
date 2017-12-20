@@ -28,7 +28,14 @@ Contact: Guillaume.Huard@imag.fr
 
 
 int arm_branch(arm_core p, uint32_t ins) {
-    return UNDEFINED_INSTRUCTION;
+    uint32_t PC = arm_read_register(p->reg,15);
+    uint32_t signed_immed_24 = get_bits(ins, 23, 0);
+    if(get_bit(ins, 24)){ // Branch and link sauvegarde LR
+        arm_write_register(p->reg, 14,PC-4); // LR = adresse de l'instruction apès le branchement
+    }
+        arm_write_register(p->reg, 15, PC + (signed_immed_24 << 2));
+
+    return 0;
 }
 
 int arm_coprocessor_others_swi(arm_core p, uint32_t ins) {
