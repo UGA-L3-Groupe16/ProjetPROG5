@@ -182,7 +182,7 @@ int arm_load_store(arm_core p, uint32_t ins) {
     if(!((ins>>25)&1))   //valeur immediate
     offset=ins&0XFFF;
     else
-    offset=read_register(p->reg,(uint8_t)(ins&0XF));
+		offset=arm_read_register(p,(uint8_t)(ins&0XF));
 }
 else{//LDRH
   if((ins>>22)&1){   //valeur immediate
@@ -190,7 +190,7 @@ else{//LDRH
   offset|=(ins&0XF);
 }
   else
-  offset=read_register(p->reg,(uint8_t)(ins&0XF));
+  offset=arm_read_register(p,(uint8_t)(ins&0XF));
 }
 
       base=(uint8_t)((ins>>16)&0XF);
@@ -199,20 +199,20 @@ else{//LDRH
         if((ins>>21)&1)
         return UNDEFINED_INSTRUCTION;
 
-        adress=read_register(p->reg,base);
+        address=arm_read_register(p,base);
         if((ins>>23)&1)
-        write_register(p->reg,base,read_register(p->reg,base)+offset);
+        arm_write_register(p,base,arm_read_register(p,base)+offset);
         else
-        write_register(p->reg,base,read_register(p->reg,base)-offset);
+        arm_write_register(p,base,arm_read_register(p,base)-offset);
       }else{
         if((ins>>23)&1)
-        adress=read_register(p->reg,base)+offset;
+        address=arm_read_register(p,base)+offset;
 
         else
-        adress=read_register(p->reg,base)-offset;
+        address=arm_read_register(p,base)-offset;
 
         if((ins>>21)&1)
-        write_register(p->reg,base,adress);
+        arm_write_register(p,base,address);
       }
 
     dest=(uint8_t)((ins>>12)&0XF);
@@ -221,18 +221,18 @@ else{//LDRH
 
     if((ins>>22)&1){//chargement d'un byte
 
-    memory_read_byte(p->mem,address,&value_byte);
-    write_register(p->reg,dest,value_byte);
+    arm_read_byte(p,address,&value_byte);
+    arm_write_register(p,dest,value_byte);
     }
     else{//chargement d'un word
 
-      memory_read_word(p->mem,address,&value);
-      write_register(p->reg,dest,value);
+      arm_read_word(p,address,&value);
+      arm_write_register(p,dest,value);
     }
         }
         else{
-          memory_read_half(p->mem,address,&value_half);
-          write_register(p->reg,dest,value_half);
+          arm_read_half(p,address,&value_half);
+          arm_write_register(p,dest,value_half);
 
         }
 
@@ -247,9 +247,9 @@ else{//LDRH
 
 int arm_load_store_multiple(arm_core p, uint32_t ins) {
   uint32_t offset;
-  uint32_t adress;
-  uint32_t start_adress;
-  uint32_t end_adress;
+  uint32_t address;
+  uint32_t start_address;
+  uint32_t end_address;
   uint32_t value;
   uint8_t dest;
   uint8_t base;
@@ -266,66 +266,66 @@ int arm_load_store_multiple(arm_core p, uint32_t ins) {
 
         if((ins>>24)&1){ //P=1
           if((ins>>23)&1){
-            start_adress=read_register(p->reg,base)+4;
-            end_adress=read_register(p->reg,base)+count*4;
+            start_address=arm_read_register(p,base)+4;
+            end_address=arm_read_register(p,base)+count*4;
 
             if((ins>>21)&1)  //W=1
-            write_register(p->reg,base,end_adress);
+            arm_write_register(p,base,end_address);
 
           }else{
-            end_adress=read_register(p->reg,base)-4;
-            start_adress=read_register(p->reg,base)-count*4;
+            end_address=arm_read_register(p,base)-4;
+            start_address=arm_read_register(p,base)-count*4;
 
             if((ins>>21)&1)  //W=1
-            write_register(p->reg,base,start_adress);
+            arm_write_register(p,base,start_address);
 
           }
         }else{ //P=0
           if((ins>>23)&1){
-            start_adress=read_register(p->reg,base);
-            end_adress=read_register(p->reg,base)+(count-1)*4;
+            start_address=arm_read_register(p,base);
+            end_address=arm_read_register(p,base)+(count-1)*4;
 
             if((ins>>21)&1)  //W=1
-            write_register(p->reg,base,end_adress+4);
+            arm_write_register(p,base,end_address+4);
 
           }else{
-            end_adress=read_register(p->reg,base);
-            start_adress=read_register(p->reg,base)-(count-1)*4;
+            end_address=arm_read_register(p,base);
+            start_address=arm_read_register(p,base)-(count-1)*4;
 
             if((ins>>21)&1)  //W=1
-            write_register(p->reg,base,start_adress-4);
+            arm_write_register(p,base,start_address-4);
 
           }
         }
-        adress=start_adress;
+        address=start_address;
 
         for(i=0;i<15;i++){
           if((ins>>i)&1){
 
-            uint32_t value;memory_read_word(p->mem,address,&value);
+            arm_read_word(p,address,&value);
 
             if(((ins>>22)&1)&&((ins>>15)&1==0))
-            write_usr_register(p->reg,i,value);
+            arm_write_usr_register(p,i,value);
             else
-            write_register(p->reg,i,value);
+            arm_write_register(p,i,value);
 
-            adress+=4;
+            address+=4;
           }
         }
 
         if((ins>>i)&15){ //chargement de PC
           if((ins>>22)&1){
-            if(!current_mode_has_spsr(p->reg))
+            if(!arm_current_mode_has_spsr(p))
             return UNDEFINED_INSTRUCTION;
 
-            write_cpsr(p->reg,read_spsr(p->reg));
+            arm_write_cpsr(p,arm_read_spsr(p));
 
-            uint32_t value;memory_read_word(p->mem,address,&value);
-            write_register(p->reg,15,value);
+            uint32_t value;arm_read_word(p,address,&value);
+            arm_write_register(p,15,value);
           }else{
-            uint32_t value;memory_read_word(p->mem,address,&value);
+            arm_read_word(p,address,&value);
             uint32_t x=~1;
-            write_register(p->reg,15,value&x);
+            arm_write_register(p,15,value&x);
           }
 
         }
