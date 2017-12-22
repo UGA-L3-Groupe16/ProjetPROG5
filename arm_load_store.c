@@ -170,7 +170,7 @@ int arm_load_store(arm_core p, uint32_t ins) {
 	uint8_t base;
 	uint32_t offset;
 	uint32_t address;
-	int success=UNDEFINED_INSTRUCTION;
+	int success;
 
 	source = get_bits(ins, 19, 16);
 	dest = get_bits(ins, 15, 12);
@@ -256,12 +256,11 @@ int arm_load_store_multiple(arm_core p, uint32_t ins) {
   uint8_t count=0;
   uint8_t i;
 
-    if((ins>>20)&1){//LOAD L=1 LDM(1)(2)(3)
-
         for(i=0;i<16;i++){
           if((ins>>i)&1)
           count++;
-        }
+				}
+
         base=(uint8_t)((ins>>16)&0XF);
 
         if((ins>>24)&1){ //P=1
@@ -299,7 +298,9 @@ int arm_load_store_multiple(arm_core p, uint32_t ins) {
         }
         address=start_address;
 
-        for(i=0;i<15;i++){
+				if((ins>>20)&1){
+
+				for(i=0;i<15;i++){
           if((ins>>i)&1){
 
             arm_read_word(p,address,&value);
@@ -330,14 +331,19 @@ int arm_load_store_multiple(arm_core p, uint32_t ins) {
 
         }
 
-  }else{//STORE L=0 STM(1)
+			}
+			else{
+				for(i=0;i<15;i++){
+          if((ins>>i)&1){
 
+            value=arm_read_register(p,i);
+						int j=arm_write_word(p,address,value);
+            address+=4;
+          }
+        }
 
+			}
 
-
-
-
-  }
     return UNDEFINED_INSTRUCTION;
 }
 
