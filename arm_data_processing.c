@@ -102,31 +102,43 @@ data_proc_callback data_proc_operations[] = {
 #define SHIFT_ASR	0x10
 #define SHIFT_ROR	0x11
 
+// /!\ /!\ Les instructions n'updatent pour l'instant pas les flags /!\ /!\
+
 /* Decoding functions for different classes of instructions */
 int arm_data_processing_shift(arm_core p, uint32_t ins) {
 	uint32_t opcode = get_bits(ins, 24, 21);
 	uint8_t rn = (uint8_t)get_bits(ins, 19, 16);
 	uint8_t	rd = (uint8_t)get_bits(ins, 15, 12);
-	uint32_t I = get_bit(ins, 25);
 	uint32_t bit_4 = get_bit(ins, 4);
 	uint32_t shifter_operand;
 	uint32_t shift = get_bits(ins, 6, 5);
 	uint32_t rm = get_bits(ins, 3, 0);
 	if(bit_4) {
 		uint8_t rs = (uint8_t)get_bits(ins, 11, 8);
-		shifter_operand = ((rm << (shift == SHIFT_LSL)*rs) >> (shift == SHIFT_LSR)*rs);
+		rs = arm_read_register(p, rs);
+		shifter_operand = ((arm_read_register(p,rm) << (shift == SHIFT_LSL)*rs) >> (shift == SHIFT_LSR)*rs); // Ne prend en compte que LSL et LSR
 	} else {
 		uint32_t shift_imm = get_bits(ins, 11, 7);	
-		shifter_operand = ((rm << (shift == SHIFT_LSL)*shift_imm) >> (shift == SHIFT_LSR)*shift_imm);
+		shifter_operand = ((arm_read_register(p,rm) << (shift == SHIFT_LSL)*shift_imm) >> (shift == SHIFT_LSR)*shift_imm); // Ne prend en compte que LSL et LSR
 	}
 	if(opcode <= 7 || opcode >= 12) // Ne marche pas pour tst, teq, cmp, cmn
-		arm_write_register(p, rd, data_proc_operations[opcode](p, rn, shifter_operand));
+		arm_write_register(p, rd, data_proc_operations[opcode](p, arm_read_register(p,rn), shifter_operand));
 	else
 		;
 	return 0;
 }
 
 int arm_data_processing_immediate_msr(arm_core p, uint32_t ins) {
-    return UNDEFINED_INSTRUCTION;
+	uint32_t opcode = get_bits(ins, 24, 21);
+	uint8_t rn = (uint8_t)get_bits(ins, 19, 16);
+	uint8_t	rd = (uint8_t)get_bits(ins, 15, 12);
+	uint32_t rotate_imm = get_bits(ins, 11, 8);
+	uint32_t immed_8 = get_bits(ins, 7, 0);
+	uint32_t shifter_operand = immed_8 >> (rotate_imm * 2);
+	if(opcode <= 7 || opcode >= 12) // Ne marche pas pour tst, teq, cmp, cmn
+		arm_write_register(p, rd, data_proc_operations[opcode](p, arm_read_register(p,rn), shifter_operand));
+	else
+		;
+	return 0;
 }
 

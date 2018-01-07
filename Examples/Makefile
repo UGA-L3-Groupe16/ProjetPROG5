@@ -80,7 +80,6 @@ noinst_PROGRAMS = example1$(EXEEXT) \
 	example2$(EXEEXT) example3$(EXEEXT) \
 	example4$(EXEEXT) \
 	insertion_sort$(EXEEXT) \
-	exOP$(EXEEXT)
 subdir = Examples
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/build-aux/depcomp
