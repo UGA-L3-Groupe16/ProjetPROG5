@@ -39,7 +39,7 @@ registers registers_create() {
 }
 
 void registers_destroy(registers r) {
-free(r);
+	free(r);
 }
 
 uint8_t get_mode(registers r) {
@@ -91,7 +91,7 @@ void write_register(registers r, uint8_t reg, uint32_t value) {
     write_spsr(r,value);
   } else if (reg == CPSR){
     write_cpsr(r,value);
-  } else if(reg) {
+  } else {
     r->R[reg]=value;
   }
 }
