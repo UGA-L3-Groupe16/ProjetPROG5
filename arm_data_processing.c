@@ -28,53 +28,100 @@ Contact: Guillaume.Huard@imag.fr
 #include "util.h"
 #include "debug.h"
 
-typedef uint32_t (*data_proc_callback)(arm_core p, uint32_t,uint32_t);
+int carry_from(uint64_t calcul) {
+	uint64_t masque = 1;
+	masque <<= 32;
+	return (calcul & masque) >> 32;
+}
 
-uint32_t cmd_and(arm_core p, uint32_t a, uint32_t b) {
+int overflow_from(uint64_t calcul) {
+	return 0;
+}
+
+typedef uint32_t (*data_proc_callback)(arm_core p, uint32_t,uint32_t,int);
+
+void update_N_Z(arm_core p, uint32_t loperand, uint32_t roperand, uint32_t res) {
+	uint32_t tempCPSR = arm_read_register(p, CPSR);
+	tempCPSR |= get_bit(res, 31) << 31;			// N
+	tempCPSR |= (res == 0) << 30;				// Z
+	arm_write_register(p, CPSR, tempCPSR);
+}
+
+void clear_flags(arm_core p) {
+	uint32_t tempCPSR = arm_read_register(p, CPSR);
+	tempCPSR &= (~0 >> 4);
+}
+
+uint32_t cmd_and(arm_core p, uint32_t a, uint32_t b, int S) {
 	return a & b;
 }
 
-uint32_t cmd_eor(arm_core p, uint32_t a, uint32_t b) {
+uint32_t cmd_eor(arm_core p, uint32_t a, uint32_t b, int S) {
 	return a ^ b;
 }
 
-uint32_t cmd_sub(arm_core p, uint32_t a, uint32_t b) {
+uint32_t cmd_sub(arm_core p, uint32_t a, uint32_t b, int S) {
+	if(S) {
+		clear_flags(p);
+		uint32_t tempCPSR = arm_read_register(p, CPSR);
+		tempCPSR |= (b >= a) << 29;
+		arm_write_register(p, CPSR, tempCPSR);
+	}
 	return a - b;
 }
 
-uint32_t cmd_rsb(arm_core p, uint32_t a, uint32_t b) {
+uint32_t cmd_rsb(arm_core p, uint32_t a, uint32_t b, int S) {
 	return b - a;
 }
 
-uint32_t cmd_add(arm_core p, uint32_t a, uint32_t b) {
+uint32_t cmd_add(arm_core p, uint32_t a, uint32_t b, int S) {
+	if(S) {
+		clear_flags(p);
+		uint32_t tempCPSR = arm_read_register(p, CPSR);
+		tempCPSR |= carry_from((uint64_t)a + (uint64_t)b) << 29;
+		arm_write_register(p, CPSR, tempCPSR);
+	}
 	return a + b;
 }
 
-uint32_t cmd_adc(arm_core p, uint32_t a, uint32_t b) {
+uint32_t cmd_adc(arm_core p, uint32_t a, uint32_t b, int S) {
+	if(S) {
+		clear_flags(p);
+		uint32_t tempCPSR = arm_read_register(p, CPSR);
+		tempCPSR |= carry_from((uint64_t)a + (uint64_t)b + (uint64_t)get_bit(arm_read_cpsr(p), C)) << 29;
+		arm_write_register(p, CPSR, tempCPSR);
+	}
 	return a + b + get_bit(arm_read_cpsr(p), C);
 }
 
-uint32_t cmd_sbc(arm_core p, uint32_t a, uint32_t b) {
+uint32_t cmd_sbc(arm_core p, uint32_t a, uint32_t b, int S) {
+	if(S) {
+		clear_flags(p);
+		uint32_t tempCPSR = arm_read_register(p, CPSR);
+		tempCPSR |= (b >= a) << 29;
+		arm_write_register(p, CPSR, tempCPSR);
+	}
+	return a - b;
 	return a - b - !get_bit(arm_read_cpsr(p), C);
 }
 
-uint32_t cmd_rsc(arm_core p, uint32_t a, uint32_t b) {
+uint32_t cmd_rsc(arm_core p, uint32_t a, uint32_t b, int S) {
 	return b - a - !get_bit(arm_read_cpsr(p), C);
 }
 
-uint32_t cmd_orr(arm_core p, uint32_t a, uint32_t b) {
+uint32_t cmd_orr(arm_core p, uint32_t a, uint32_t b, int S) {
 	return a | b;
 }
 
-uint32_t cmd_mov(arm_core p, uint32_t a, uint32_t b) {
+uint32_t cmd_mov(arm_core p, uint32_t a, uint32_t b, int S) {
 	return b;
 }
 
-uint32_t cmd_bic(arm_core p, uint32_t a, uint32_t b) {
+uint32_t cmd_bic(arm_core p, uint32_t a, uint32_t b, int S) {
 	return a & ~b;
 }
 
-uint32_t cmd_mvn(arm_core p, uint32_t a, uint32_t b) {
+uint32_t cmd_mvn(arm_core p, uint32_t a, uint32_t b, int S) {
 	return ~b;
 }
 
@@ -102,7 +149,30 @@ data_proc_callback data_proc_operations[] = {
 #define SHIFT_ASR	0x10
 #define SHIFT_ROR	0x11
 
-// /!\ /!\ Les instructions n'updatent pour l'instant pas les flags /!\ /!\
+// /!\ /!\ Les instructions n'updatent pour l'instant pas les flags /!\ /!\.
+uint32_t shifts(uint8_t shift_bits, uint32_t loperand, uint32_t roperand) {
+	uint32_t bits_restants = loperand & (~0 >> (32 - (roperand % 32)));
+	switch(shift_bits) {
+		case SHIFT_LSL:
+			return loperand << roperand;
+		case SHIFT_LSR:
+			return loperand >> roperand;
+		case SHIFT_ASR:
+			return asr(loperand, roperand);
+		case SHIFT_ROR:
+			return ror(loperand, roperand);
+		default:
+			return 0;
+	}
+}
+
+int is_unsigned_overflow_instr(uint32_t opcode) {	// Teste si on est dans l'instruction ADC, ADD, CMN pour le premier type de calcul du flag C
+	return opcode == 0b0100 || opcode == 0b0101 || opcode == 0b1011;
+}
+
+int is_unsigned_underflow_instr(uint32_t opcode) {	// Teste si on est dans l'instruction SUB, CMP, SBC pour le premier type de calcul du flag C
+	return opcode == 0b1010 || opcode == 0b0110 || opcode == 0b0010;
+}
 
 /* Decoding functions for different classes of instructions */
 int arm_data_processing_shift(arm_core p, uint32_t ins) {
@@ -113,17 +183,23 @@ int arm_data_processing_shift(arm_core p, uint32_t ins) {
 	uint32_t shifter_operand;
 	uint32_t shift = get_bits(ins, 6, 5);
 	uint32_t rm = get_bits(ins, 3, 0);
+	uint32_t S = get_bit(ins, 20);
 	if(bit_4) {
 		uint8_t rs = (uint8_t)get_bits(ins, 11, 8);
 		rs = arm_read_register(p, rs);
-		shifter_operand = ((arm_read_register(p,rm) << (shift == SHIFT_LSL)*rs) >> (shift == SHIFT_LSR)*rs); // Ne prend en compte que LSL et LSR
+		shifter_operand = shifts(shift, arm_read_register(p,rm),rs);
 	} else {
 		uint32_t shift_imm = get_bits(ins, 11, 7);	
-		shifter_operand = ((arm_read_register(p,rm) << (shift == SHIFT_LSL)*shift_imm) >> (shift == SHIFT_LSR)*shift_imm); // Ne prend en compte que LSL et LSR
+		shifter_operand = shifts(shift, arm_read_register(p,rm),shift_imm);
 	}
-	if(opcode <= 7 || opcode >= 12) // Ne marche pas pour tst, teq, cmp, cmn
-		arm_write_register(p, rd, data_proc_operations[opcode](p, arm_read_register(p,rn), shifter_operand));
-	else
+	if(opcode <= 7 || opcode >= 12) {// Ne marche pas pour tst, teq, cmp, cmn
+		uint32_t op1 = arm_read_register(p,rn);
+		uint32_t res = data_proc_operations[opcode](p, op1, shifter_operand, S);
+		if(S) {
+			update_N_Z(p, res, op1, shifter_operand);
+		}
+		arm_write_register(p, rd, res);
+	} else
 		;
 	return 0;
 }
@@ -132,12 +208,18 @@ int arm_data_processing_immediate_msr(arm_core p, uint32_t ins) {
 	uint32_t opcode = get_bits(ins, 24, 21);
 	uint8_t rn = (uint8_t)get_bits(ins, 19, 16);
 	uint8_t	rd = (uint8_t)get_bits(ins, 15, 12);
+	uint32_t S = get_bit(ins, 20);
 	uint32_t rotate_imm = get_bits(ins, 11, 8);
 	uint32_t immed_8 = get_bits(ins, 7, 0);
-	uint32_t shifter_operand = immed_8 >> (rotate_imm * 2);
-	if(opcode <= 7 || opcode >= 12) // Ne marche pas pour tst, teq, cmp, cmn
-		arm_write_register(p, rd, data_proc_operations[opcode](p, arm_read_register(p,rn), shifter_operand));
-	else
+	uint32_t shifter_operand = ror(immed_8,(rotate_imm * 2));
+	if(opcode <= 7 || opcode >= 12) { // Ne marche pas pour tst, teq, cmp, cmn
+		uint32_t op1 = arm_read_register(p,rn);
+		uint32_t res = data_proc_operations[opcode](p, op1, shifter_operand, S);
+		if(S) {
+			update_N_Z(p, res, op1, shifter_operand);
+		}
+		arm_write_register(p, rd, res);
+	} else
 		;
 	return 0;
 }

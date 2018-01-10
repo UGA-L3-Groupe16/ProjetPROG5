@@ -2,6 +2,7 @@
 .text
 
 main:
+	adds r3,#0
 	mov r1,#4
 	mov r2,#5
 	mov r3,#2

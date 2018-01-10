@@ -91,21 +91,25 @@ static int arm_execute_instruction(arm_core p) {
 			break;
 	}
 	switch(get_bits(value, 27, 25)) {
-		case 0x000:	arm_data_processing_shift(p, value);
+		case 0b000:	
+			if(get_bits(value, 7, 4) != 0b1011)
+				arm_data_processing_shift(p, value);
+			else
+				arm_load_store(p, value);
 			break;
-		case 0x001:	arm_data_processing_immediate_msr(p, value);	
+		case 0b001:	arm_data_processing_immediate_msr(p, value);	
 			break;
-		case 0x010:	arm_load_store(p, value);
+		case 0b010:	arm_load_store(p, value);
 			break;
-		case 0x011: arm_load_store(p, value);
+		case 0b011: arm_load_store(p, value);
 			break;
-		case 0x100:	arm_load_store_multiple(p, value);
+		case 0b100:	arm_load_store_multiple(p, value);
 			break;
-		case 0x101: arm_branch(p, value);
+		case 0b101: arm_branch(p, value);
 			break;
-		case 0x110:	arm_coprocessor_load_store(p, value);
+		case 0b110:	arm_coprocessor_load_store(p, value);
 			break;
-		case 0x111:
+		case 0b111:
 			break;
 		default:
 			break;
