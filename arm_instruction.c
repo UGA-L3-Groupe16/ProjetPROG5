@@ -1,24 +1,24 @@
 /*
-Armator - simulateur de jeu d'instruction ARMv5T à but pédagogique
+Armator - simulateur de jeu d'instruction ARMv5T ï¿½ but pï¿½dagogique
 Copyright (C) 2011 Guillaume Huard
 Ce programme est libre, vous pouvez le redistribuer et/ou le modifier selon les
-termes de la Licence Publique Générale GNU publiée par la Free Software
-Foundation (version 2 ou bien toute autre version ultérieure choisie par vous).
+termes de la Licence Publique Gï¿½nï¿½rale GNU publiï¿½e par la Free Software
+Foundation (version 2 ou bien toute autre version ultï¿½rieure choisie par vous).
 
-Ce programme est distribué car potentiellement utile, mais SANS AUCUNE
+Ce programme est distribuï¿½ car potentiellement utile, mais SANS AUCUNE
 GARANTIE, ni explicite ni implicite, y compris les garanties de
-commercialisation ou d'adaptation dans un but spécifique. Reportez-vous à la
-Licence Publique Générale GNU pour plus de détails.
+commercialisation ou d'adaptation dans un but spï¿½cifique. Reportez-vous ï¿½ la
+Licence Publique Gï¿½nï¿½rale GNU pour plus de dï¿½tails.
 
-Vous devez avoir reçu une copie de la Licence Publique Générale GNU en même
-temps que ce programme ; si ce n'est pas le cas, écrivez à la Free Software
+Vous devez avoir reï¿½u une copie de la Licence Publique Gï¿½nï¿½rale GNU en mï¿½me
+temps que ce programme ; si ce n'est pas le cas, ï¿½crivez ï¿½ la Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
-États-Unis.
+ï¿½tats-Unis.
 
 Contact: Guillaume.Huard@imag.fr
-	 Bâtiment IMAG
+	 Bï¿½timent IMAG
 	 700 avenue centrale, domaine universitaire
-	 38401 Saint Martin d'Hères
+	 38401 Saint Martin d'Hï¿½res
 */
 #include "arm_instruction.h"
 #include "arm_exception.h"
@@ -53,7 +53,7 @@ static int arm_execute_instruction(arm_core p) {
 	uint32_t cond = get_bits(value, 31, 28);
 	uint32_t cpsr = arm_read_cpsr(p);
 	printf("%x", value);
-	
+
 	switch(cond) {
 		case EQ:	if(!get_bit(cpsr, Z))	return 0;
 			break;
@@ -83,7 +83,7 @@ static int arm_execute_instruction(arm_core p) {
 			break;
 		case LE:	if(get_bit(cpsr,Z) == 1 || get_bit(cpsr,N) != get_bit(cpsr,V))	return 0;
 			break;
-		case AL:	
+		case AL:
 			break;
 		case EUUUH:	return 0;
 			break;
@@ -91,21 +91,25 @@ static int arm_execute_instruction(arm_core p) {
 			break;
 	}
 	switch(get_bits(value, 27, 25)) {
-		case 0x000:	arm_data_processing_shift(p, value);
+		case 0b000:	if(get_bit(value,4) && get_bit(value,7))
+								arm_load_store(p, value);
+
+								else
+		 						arm_data_processing_shift(p, value);
 			break;
-		case 0x001:	arm_data_processing_immediate_msr(p, value);	
+		case 0b001:	arm_data_processing_immediate_msr(p, value);
 			break;
-		case 0x010:	arm_load_store(p, value);
+		case 0b010:	arm_load_store(p, value);
 			break;
-		case 0x011: arm_load_store(p, value);
+		case 0b011: arm_load_store(p, value);
 			break;
-		case 0x100:	arm_load_store_multiple(p, value);
+		case 0b100:	arm_load_store_multiple(p, value);
 			break;
-		case 0x101: arm_branch(p, value);
+		case 0b101: arm_branch(p, value);
 			break;
-		case 0x110:	arm_coprocessor_load_store(p, value);
+		case 0b110:	arm_coprocessor_load_store(p, value);
 			break;
-		case 0x111:
+		case 0b111:
 			break;
 		default:
 			break;

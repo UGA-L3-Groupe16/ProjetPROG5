@@ -181,8 +181,31 @@ int arm_load_store(arm_core p, uint32_t ins) {
 	if((ins>>26)&1){   //LDR
     if(!((ins>>25)&1))   //valeur immediate
     offset=ins&0XFFF;
-    else
+    else{
+			if(!get_bits(ins,11,4))
 		offset=arm_read_register(p,(uint8_t)(ins&0XF));
+		else{
+			uint32_t rm=arm_read_register(p,(uint8_t)get_bits(ins,3,0));
+			uint8_t shift_imm=(uint8_t)get_bits(ins,11,7);
+
+			if(get_bits(ins,6,5)){
+				if(shift_imm)
+				offset=rm>>shift_imm;
+
+				else{
+					offset=0;
+					if((get_bits(ins,6,5)==0b10)&&(get_bit(rm,31)))
+					offset=~offset;
+
+					else if(get_bits(ins,6,5)==0b11)
+					offset=(get_bit(arm_read_cpsr(p), C)<<31)|(rm>>1);
+				}
+			}
+			else
+			offset=rm<<shift_imm;
+
+		}
+	}
 }
 else{//LDRH
   if((ins>>22)&1){   //valeur immediate
@@ -225,8 +248,16 @@ else{//LDRH
     arm_write_register(p,dest,value_byte);
     }
     else{//chargement d'un word
+		arm_read_word(p,address,&value);
 
-      arm_read_word(p,address,&value);
+			if(dest==15){
+				arm_write_register(p,dest,value & 0xFFFFFFFE);
+				if(value%2)
+				arm_write_cpsr(p,set_bit(arm_read_cpsr(p),5));
+				else
+				arm_write_cpsr(p,clr_bit(arm_read_cpsr(p),5));
+			}
+			else
       arm_write_register(p,dest,value);
     }
         }
@@ -246,12 +277,10 @@ else{//LDRH
 }
 
 int arm_load_store_multiple(arm_core p, uint32_t ins) {
-  uint32_t offset;
   uint32_t address;
   uint32_t start_address;
   uint32_t end_address;
   uint32_t value;
-  uint8_t dest;
   uint8_t base;
   uint8_t count=0;
   uint8_t i;
@@ -302,42 +331,28 @@ int arm_load_store_multiple(arm_core p, uint32_t ins) {
 
 				for(i=0;i<15;i++){
           if((ins>>i)&1){
-
             arm_read_word(p,address,&value);
-
-            if(((ins>>22)&1)&&((ins>>15)&1==0))
-            arm_write_usr_register(p,i,value);
-            else
             arm_write_register(p,i,value);
-
             address+=4;
           }
         }
 
-        if((ins>>i)&15){ //chargement de PC
-          if((ins>>22)&1){
-            if(!arm_current_mode_has_spsr(p))
-            return UNDEFINED_INSTRUCTION;
-
-            arm_write_cpsr(p,arm_read_spsr(p));
-
-            uint32_t value;arm_read_word(p,address,&value);
-            arm_write_register(p,15,value);
-          }else{
+        if((ins>>i)&1){ //chargement de PC
             arm_read_word(p,address,&value);
-            uint32_t x=~1;
-            arm_write_register(p,15,value&x);
-          }
+            arm_write_register(p,15,value & 0xFFFFFFFE);
+						if(value%2)
+						arm_write_cpsr(p,set_bit(arm_read_cpsr(p),5));
+						else
+						arm_write_cpsr(p,clr_bit(arm_read_cpsr(p),5));
 
         }
-
 			}
 			else{
 				for(i=0;i<15;i++){
           if((ins>>i)&1){
 
             value=arm_read_register(p,i);
-						int j=arm_write_word(p,address,value);
+						arm_write_word(p,address,value);
             address+=4;
           }
         }
