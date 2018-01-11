@@ -29,22 +29,22 @@ Contact: Guillaume.Huard@imag.fr
 #include "arm_core.h"
 #include "util.h"
 
-#define EQ 		0x0000
-#define NE 		0x0001
-#define CS		0x0010
-#define CC		0x0011
-#define MI 		0x0100
-#define PL		0x0101
-#define VS		0x0110
-#define VC 		0x0111
-#define HI		0x1000
-#define LS		0x1001
-#define GE		0x1010
-#define LT		0x1011
-#define GT		0x1100
-#define LE		0x1101
-#define AL		0x1110
-#define EUUUH	0x1111
+#define EQ 		0b0000
+#define NE 		0b0001
+#define CS		0b0010
+#define CC		0b0011
+#define MI 		0b0100
+#define PL		0b0101
+#define VS		0b0110
+#define VC 		0b0111
+#define HI		0b1000
+#define LS		0b1001
+#define GE		0b1010
+#define LT		0b1011
+#define GT		0b1100
+#define LE		0b1101
+#define AL		0b1110
+#define EUUUH	0b1111
 
 static int arm_execute_instruction(arm_core p) {
 	int result;
