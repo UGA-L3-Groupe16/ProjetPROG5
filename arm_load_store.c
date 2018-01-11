@@ -36,31 +36,52 @@ uint32_t Op_bit_U(uint32_t address, uint16_t offset, uint32_t ins){
 	}
 }
 
-void Op_bit_I(arm_core p, uint32_t address, uint16_t offset, uint32_t ins){
+uint32_t Op_bit_I(arm_core p, uint32_t address, uint16_t offset, uint32_t ins){
 //Offset immediat ou via registre, pour STR/STRB
 
 	uint8_t reg_offset;		//Rm
+	uint32_t addr_off;
+	uint8_t shift_imm;
 
 	if(get_bit(ins, 25)){
 	//Registre
 
 		reg_offset = get_bits(ins, 3, 0);
-		offset = arm_read_register(p, reg_offset);
-		address = Op_bit_U(address, offset, ins);
+		if (!get_bits(ins, 11, 4)){
+			offset = arm_read_register(p, reg_offset);
+		} else {
+			shift_imm = get_bits(ins, 11, 7);
+			if (get_bits(ins, 6, 5)){
+				if (shift_imm){
+					offset = arm_read_register(p, reg_offset)>>shift_imm;
+				} else{
+					offset = 0;
+					if ((get_bits(ins, 6, 5) == 0b10)&&(get_bit(arm_read_register(p, reg_offset), 31))){
+						offset = ~offset;
+					}else if(get_bits(ins, 6, 5) == 0b11){
+						offset=(get_bit(arm_read_cpsr(p), C)<<31)|(arm_read_register(p, reg_offset)>>1);
+					}
+				}
+			}else{
+				offset=arm_read_register(p, reg_offset)<<shift_imm;
+			}
+		}
 	} else {
 	//Immediat
 
 		offset = get_bits(ins, 11, 0);
-		address = Op_bit_U(address, offset, ins);
 	}
+	addr_off = Op_bit_U(address, offset, ins);
+	return addr_off;
 }
 
-void Op_bit_22(arm_core p, uint32_t address, uint16_t offset, uint32_t ins){
+uint32_t Op_bit_22(arm_core p, uint32_t address, uint16_t offset, uint32_t ins){
 //Offset immediat ou via registre, pour STRH
 
 	uint8_t immedH;			//haut de l'offset
 	uint8_t immedL;			//bas de l'offset
 	uint8_t reg_offset;		//Rm
+	uint32_t addr_off;
 
 	if (get_bit(ins, 22)){
 	//Immediat
@@ -68,29 +89,31 @@ void Op_bit_22(arm_core p, uint32_t address, uint16_t offset, uint32_t ins){
 		immedH = get_bits(ins, 11, 8);
 		immedL = get_bits(ins, 3, 0);
 		offset = (immedH << 4) | immedL;
-		Op_bit_U(address, offset, ins);
 	} else {
 	//Registre
 
 		reg_offset = get_bits(ins, 3, 0);
 		offset = arm_read_register(p, reg_offset);
-		address = Op_bit_U(address, offset, ins);
 	}
+	addr_off = Op_bit_U(address, offset, ins);
+	return addr_off;
 }
 
-void Op_bit_W(arm_core p, uint32_t address, uint16_t offset, uint32_t ins, uint8_t dest){
+uint32_t Op_bit_W(arm_core p, uint32_t address, uint16_t offset, uint32_t ins, uint8_t dest){
 //Ecriture de la nouvelle adresse dans le registre ou pas
+	uint32_t addr_off;
 
 	if (get_bit(ins, 26)){
-		Op_bit_I(p, address, offset, ins);
+		addr_off = Op_bit_I(p, address, offset, ins);
 	} else {
-		Op_bit_22(p, address, offset, ins);
+		addr_off = Op_bit_22(p, address, offset, ins);
 	}
 	if (get_bit(ins, 21)){
 	//Pre-indexed addressing -> enregistrement dans le registre
 
-		arm_write_register(p, dest, address);
+		arm_write_register(p, dest, addr_off);
 	}
+	return addr_off;
 }
 
 int store(arm_core p , uint32_t ins, uint8_t source, uint8_t dest, uint32_t address){
@@ -98,6 +121,7 @@ int store(arm_core p , uint32_t ins, uint8_t source, uint8_t dest, uint32_t addr
 	uint16_t value_half;	//Valeur stockée, half-word
 	uint8_t value_byte;		//Valeur stockée, byte
 	uint16_t offset;
+	uint32_t addr_off;
 	int success;
 
 	if (get_bit(ins, 26)){
@@ -115,15 +139,14 @@ int store(arm_core p , uint32_t ins, uint8_t source, uint8_t dest, uint32_t addr
 		if (get_bit(ins, 24)){
 		//Pre-indexed addressing / offset addressing
 
-			Op_bit_W(p, address, offset, ins, dest);
+			addr_off = Op_bit_W(p, address, offset, ins, dest);
 			if (get_bit(ins, 22)){
 			//STRB
 
-				success = arm_write_byte(p, address, value_byte);
+				success = arm_write_byte(p, addr_off, value_byte);
 			} else {
 			//STR
-
-				success = arm_write_word(p, address, value);
+				success = arm_write_word(p, addr_off, value);
 			}
 		} else {
 		//Post-indexed addressing
@@ -137,8 +160,8 @@ int store(arm_core p , uint32_t ins, uint8_t source, uint8_t dest, uint32_t addr
 
 				success = arm_write_word(p, address, value);
 			}
-			Op_bit_I(p, address, offset, ins);
-			arm_write_register(p, dest, address);
+			addr_off = Op_bit_I(p, address, offset, ins);
+			arm_write_register(p, dest, addr_off);
 		}
 	} else {
 	//STRH
@@ -147,14 +170,14 @@ int store(arm_core p , uint32_t ins, uint8_t source, uint8_t dest, uint32_t addr
 		if (get_bit(ins, 24)){
 		//Pre-indexed addressing / offset addressing
 
-			Op_bit_W(p, address, offset, ins, dest);
-			success = arm_write_half(p, address, value_half);
+			addr_off = Op_bit_W(p, address, offset, ins, dest);
+			success = arm_write_half(p, addr_off, value_half);
 		} else {
 		//Post-indexed addressing
 
 			success = arm_write_half(p, address, value_half);
-			Op_bit_22(p, address, offset, ins);
-			arm_write_register(p, dest, address);
+			addr_off = Op_bit_22(p, address, offset, ins);
+			arm_write_register(p, dest, addr_off);
 		}
 	}
 	return success;
@@ -174,15 +197,38 @@ int arm_load_store(arm_core p, uint32_t ins) {
 
 	source = get_bits(ins, 19, 16);
 	dest = get_bits(ins, 15, 12);
-	address = arm_read_register(p, dest);
 
 	if (get_bit(ins, 20)){
 
+	address = arm_read_register(p, dest);
 	if((ins>>26)&1){   //LDR
     if(!((ins>>25)&1))   //valeur immediate
     offset=ins&0XFFF;
-    else
+    else{
+			if(!get_bits(ins,11,4))
 		offset=arm_read_register(p,(uint8_t)(ins&0XF));
+		else{
+			uint32_t rm=arm_read_register(p,(uint8_t)get_bits(ins,3,0));
+			uint8_t shift_imm=(uint8_t)get_bits(ins,11,7);
+
+			if(get_bits(ins,6,5)){
+				if(shift_imm)
+				offset=rm>>shift_imm;
+
+				else{
+					offset=0;
+					if((get_bits(ins,6,5)==0b10)&&(get_bit(rm,31)))
+					offset=~offset;
+
+					else if(get_bits(ins,6,5)==0b11)
+					offset=(get_bit(arm_read_cpsr(p), C)<<31)|(rm>>1);
+				}
+			}
+			else
+			offset=rm<<shift_imm;
+
+		}
+	}
 }
 else{//LDRH
   if((ins>>22)&1){   //valeur immediate
@@ -225,8 +271,16 @@ else{//LDRH
     arm_write_register(p,dest,value_byte);
     }
     else{//chargement d'un word
+		arm_read_word(p,address,&value);
 
-      arm_read_word(p,address,&value);
+			if(dest==15){
+				arm_write_register(p,dest,value & 0xFFFFFFFE);
+				if(value%2)
+				arm_write_cpsr(p,set_bit(arm_read_cpsr(p),5));
+				else
+				arm_write_cpsr(p,clr_bit(arm_read_cpsr(p),5));
+			}
+			else
       arm_write_register(p,dest,value);
     }
         }
@@ -239,19 +293,17 @@ else{//LDRH
 
 	} else {
 	//STORE
-
-		success = store(p, ins, source, dest, address);
+		address = arm_read_register(p, source);
+		success = store(p, ins, dest, source, address);
 	}
     return success;
 }
 
 int arm_load_store_multiple(arm_core p, uint32_t ins) {
-  uint32_t offset;
   uint32_t address;
   uint32_t start_address;
   uint32_t end_address;
   uint32_t value;
-  uint8_t dest;
   uint8_t base;
   uint8_t count=0;
   uint8_t i;
@@ -298,46 +350,32 @@ int arm_load_store_multiple(arm_core p, uint32_t ins) {
         }
         address=start_address;
 
-				if((ins>>20)&1){
+				if((ins>>20)&1){   //LDM(1)
 
 				for(i=0;i<15;i++){
           if((ins>>i)&1){
-
             arm_read_word(p,address,&value);
-
-            if(((ins>>22)&1)&&((ins>>15)&1==0))
-            arm_write_usr_register(p,i,value);
-            else
             arm_write_register(p,i,value);
-
             address+=4;
           }
         }
 
-        if((ins>>i)&15){ //chargement de PC
-          if((ins>>22)&1){
-            if(!arm_current_mode_has_spsr(p))
-            return UNDEFINED_INSTRUCTION;
-
-            arm_write_cpsr(p,arm_read_spsr(p));
-
-            uint32_t value;arm_read_word(p,address,&value);
-            arm_write_register(p,15,value);
-          }else{
+        if((ins>>i)&1){ //chargement de PC
             arm_read_word(p,address,&value);
-            uint32_t x=~1;
-            arm_write_register(p,15,value&x);
-          }
+            arm_write_register(p,15,value & 0xFFFFFFFE);
+						if(value%2)
+						arm_write_cpsr(p,set_bit(arm_read_cpsr(p),5));
+						else
+						arm_write_cpsr(p,clr_bit(arm_read_cpsr(p),5));
 
         }
-
 			}
 			else{
-				for(i=0;i<15;i++){
+				for(i=0;i<15;i++){   //STM(1)
           if((ins>>i)&1){
 
             value=arm_read_register(p,i);
-						int j=arm_write_word(p,address,value);
+						arm_write_word(p,address,value);
             address+=4;
           }
         }

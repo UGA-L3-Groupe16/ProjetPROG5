@@ -52,8 +52,8 @@ static int arm_execute_instruction(arm_core p) {
 	result = arm_fetch(p, &value);
 	uint32_t cond = get_bits(value, 31, 28);
 	uint32_t cpsr = arm_read_cpsr(p);
-	printf("%x", value);
-	
+	//printf("%x", value);
+
 	switch(cond) {
 		case EQ:	if(!get_bit(cpsr, Z))	return 0;
 			break;
@@ -83,7 +83,7 @@ static int arm_execute_instruction(arm_core p) {
 			break;
 		case LE:	if(get_bit(cpsr,Z) == 1 || get_bit(cpsr,N) != get_bit(cpsr,V))	return 0;
 			break;
-		case AL:	
+		case AL:
 			break;
 		case EUUUH:	return 0;
 			break;
