@@ -2,8 +2,9 @@
 .text
 
 main:
-	adds r3,#0
-	mov r1,#4
+	mov r1,#0xFFFFFFFF
+	mov r2,#30
+	adds r0,r1,r2
 	mov r2,#5
 	mov r3,#2
 	add r3,r1,#4
