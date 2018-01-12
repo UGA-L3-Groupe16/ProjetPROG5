@@ -63,7 +63,7 @@ uint32_t cmd_sub(arm_core p, uint32_t a, uint32_t b, int S) {
 	if(S) {
 		clear_flags(p);
 		uint32_t tempCPSR = arm_read_register(p, CPSR);
-		tempCPSR |= (b >= a) << 29;
+		tempCPSR |= (a >= b) << 29;
 		tempCPSR |= get_bit(a, 31) != get_bit(b,31) && get_bit(b, 31) == get_bit(a-b,31) << 28;
 		arm_write_register(p, CPSR, tempCPSR);
 	}
@@ -71,7 +71,7 @@ uint32_t cmd_sub(arm_core p, uint32_t a, uint32_t b, int S) {
 }
 
 uint32_t cmd_rsb(arm_core p, uint32_t a, uint32_t b, int S) {
-	return b - a;
+	return cmd_sub(p, b, a, S);
 }
 
 uint32_t cmd_add(arm_core p, uint32_t a, uint32_t b, int S) {
@@ -100,7 +100,7 @@ uint32_t cmd_sbc(arm_core p, uint32_t a, uint32_t b, int S) {
 	if(S) {
 		clear_flags(p);
 		uint32_t tempCPSR = arm_read_register(p, CPSR);
-		tempCPSR |= (b >= a) << 29;
+		tempCPSR |= (a >= b) << 29;
 		tempCPSR |= get_bit(a, 31) != get_bit(b,31) && get_bit(b, 31) == get_bit(a-b,31) << 28;
 		arm_write_register(p, CPSR, tempCPSR);
 	}
