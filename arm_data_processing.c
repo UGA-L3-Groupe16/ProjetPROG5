@@ -166,10 +166,10 @@ data_proc_callback data_proc_operations[] = {
 	&cmd_mvn
 };
 
-#define SHIFT_LSL	0x00
-#define	SHIFT_LSR	0x01
-#define SHIFT_ASR	0x10
-#define SHIFT_ROR	0x11
+#define SHIFT_LSL	0b00
+#define	SHIFT_LSR	0b01
+#define SHIFT_ASR	0b10
+#define SHIFT_ROR	0b11
 
 // /!\ /!\ Les instructions n'updatent pour l'instant pas les flags /!\ /!\.
 uint32_t shifts(uint8_t shift_bits, uint32_t loperand, uint32_t roperand) {
@@ -184,7 +184,7 @@ uint32_t shifts(uint8_t shift_bits, uint32_t loperand, uint32_t roperand) {
 		case SHIFT_ROR:
 			return ror(loperand, roperand);
 		default:
-			return 0;
+			return 88;
 	}
 }
 
