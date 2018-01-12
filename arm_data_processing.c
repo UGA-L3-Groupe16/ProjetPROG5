@@ -63,7 +63,7 @@ uint32_t cmd_sub(arm_core p, uint32_t a, uint32_t b, int S) {
 	if(S) {
 		clear_flags(p);
 		uint32_t tempCPSR = arm_read_register(p, CPSR);
-		tempCPSR |= (b >= a) << 29;
+		tempCPSR |= (a >= b) << 29;
 		tempCPSR |= get_bit(a, 31) != get_bit(b,31) && get_bit(b, 31) == get_bit(a-b,31) << 28;
 		arm_write_register(p, CPSR, tempCPSR);
 	}
@@ -71,7 +71,7 @@ uint32_t cmd_sub(arm_core p, uint32_t a, uint32_t b, int S) {
 }
 
 uint32_t cmd_rsb(arm_core p, uint32_t a, uint32_t b, int S) {
-	return b - a;
+	return cmd_sub(p, b, a, S);
 }
 
 uint32_t cmd_add(arm_core p, uint32_t a, uint32_t b, int S) {
@@ -100,7 +100,7 @@ uint32_t cmd_sbc(arm_core p, uint32_t a, uint32_t b, int S) {
 	if(S) {
 		clear_flags(p);
 		uint32_t tempCPSR = arm_read_register(p, CPSR);
-		tempCPSR |= (b >= a) << 29;
+		tempCPSR |= (a >= b) << 29;
 		tempCPSR |= get_bit(a, 31) != get_bit(b,31) && get_bit(b, 31) == get_bit(a-b,31) << 28;
 		arm_write_register(p, CPSR, tempCPSR);
 	}
@@ -166,10 +166,10 @@ data_proc_callback data_proc_operations[] = {
 	&cmd_mvn
 };
 
-#define SHIFT_LSL	0x00
-#define	SHIFT_LSR	0x01
-#define SHIFT_ASR	0x10
-#define SHIFT_ROR	0x11
+#define SHIFT_LSL	0b00
+#define	SHIFT_LSR	0b01
+#define SHIFT_ASR	0b10
+#define SHIFT_ROR	0b11
 
 // /!\ /!\ Les instructions n'updatent pour l'instant pas les flags /!\ /!\.
 uint32_t shifts(uint8_t shift_bits, uint32_t loperand, uint32_t roperand) {
@@ -184,7 +184,7 @@ uint32_t shifts(uint8_t shift_bits, uint32_t loperand, uint32_t roperand) {
 		case SHIFT_ROR:
 			return ror(loperand, roperand);
 		default:
-			return 0;
+			return 88;
 	}
 }
 

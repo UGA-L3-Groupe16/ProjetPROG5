@@ -2,17 +2,11 @@ COMP=arm-none-eabi-gcc
 COMP-FLAGS=-mbig-endian -g -O2
 LD=arm-none-eabi-gcc -mbig-endian -g -O2 -nostdlib -T ./linker_script -n --entry main -Wl,-EB
 
-EXECUTABLES: exOP exCMP calc
+EXECUTABLES: data_processing_shift
 
 all: $(EXECUTABLES)
 
-exOP: exOP.o
-	$(LD) -o $@ $^
-
-exCMP: exCMP.o
-	$(LD) -o $@ $^
-
-calc: calc.o
+data_processing_shift: data_processing_shift.o
 	$(LD) -o $@ $^
 
 %.o: %.s
