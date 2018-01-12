@@ -2,7 +2,7 @@ COMP=arm-none-eabi-gcc
 COMP-FLAGS=-mbig-endian -g -O2
 LD=arm-none-eabi-gcc -mbig-endian -g -O2 -nostdlib -T ./linker_script -n --entry main -Wl,-EB
 
-EXECUTABLES: exOP exCMP
+EXECUTABLES: exOP exCMP calc
 
 all: $(EXECUTABLES)
 
@@ -10,6 +10,9 @@ exOP: exOP.o
 	$(LD) -o $@ $^
 
 exCMP: exCMP.o
+	$(LD) -o $@ $^
+
+calc: calc.o
 	$(LD) -o $@ $^
 
 %.o: %.s

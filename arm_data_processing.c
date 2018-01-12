@@ -48,7 +48,7 @@ void update_N_Z(arm_core p, uint32_t loperand, uint32_t roperand, uint32_t res) 
 
 void clear_flags(arm_core p) {
 	uint32_t tempCPSR = arm_read_register(p, CPSR);
-	tempCPSR &= (~0 >> 4);
+	arm_write_register(p, CPSR, tempCPSR & (~(uint32_t)0 >> 4));
 }
 
 uint32_t cmd_and(arm_core p, uint32_t a, uint32_t b, int S) {
@@ -64,6 +64,7 @@ uint32_t cmd_sub(arm_core p, uint32_t a, uint32_t b, int S) {
 		clear_flags(p);
 		uint32_t tempCPSR = arm_read_register(p, CPSR);
 		tempCPSR |= (b >= a) << 29;
+		tempCPSR |= get_bit(a, 31) != get_bit(b,31) && get_bit(b, 31) == get_bit(a-b,31) << 28;
 		arm_write_register(p, CPSR, tempCPSR);
 	}
 	return a - b;
@@ -78,6 +79,7 @@ uint32_t cmd_add(arm_core p, uint32_t a, uint32_t b, int S) {
 		clear_flags(p);
 		uint32_t tempCPSR = arm_read_register(p, CPSR);
 		tempCPSR |= carry_from((uint64_t)a + (uint64_t)b) << 29;
+		tempCPSR |= ((get_bit(a,31) == get_bit(b,31)) && (get_bit(a,31) != get_bit(a+b,31))) << 28;
 		arm_write_register(p, CPSR, tempCPSR);
 	}
 	return a + b;
@@ -88,6 +90,7 @@ uint32_t cmd_adc(arm_core p, uint32_t a, uint32_t b, int S) {
 		clear_flags(p);
 		uint32_t tempCPSR = arm_read_register(p, CPSR);
 		tempCPSR |= carry_from((uint64_t)a + (uint64_t)b + (uint64_t)get_bit(arm_read_cpsr(p), C)) << 29;
+		tempCPSR |= ((get_bit(a,31) == get_bit(b,31)) && (get_bit(a,31) == get_bit(a+b,31))) << 28;
 		arm_write_register(p, CPSR, tempCPSR);
 	}
 	return a + b + get_bit(arm_read_cpsr(p), C);
@@ -98,6 +101,7 @@ uint32_t cmd_sbc(arm_core p, uint32_t a, uint32_t b, int S) {
 		clear_flags(p);
 		uint32_t tempCPSR = arm_read_register(p, CPSR);
 		tempCPSR |= (b >= a) << 29;
+		tempCPSR |= get_bit(a, 31) != get_bit(b,31) && get_bit(b, 31) == get_bit(a-b,31) << 28;
 		arm_write_register(p, CPSR, tempCPSR);
 	}
 	return a - b - !get_bit(arm_read_cpsr(p), C);
@@ -206,7 +210,7 @@ int arm_data_processing_shift(arm_core p, uint32_t ins) {
 	uint32_t res = data_proc_operations[opcode](p, op1, shifter_operand, S);
 	if(opcode <= OPCODE_TST || opcode >= OPCODE_CMN) {
 		if(S) {
-			update_N_Z(p, res, op1, shifter_operand);
+			update_N_Z(p, op1, shifter_operand, res);
 		}
 		arm_write_register(p, rd, res);
 	}
@@ -225,7 +229,7 @@ int arm_data_processing_immediate_msr(arm_core p, uint32_t ins) {
 	uint32_t res = data_proc_operations[opcode](p, op1, shifter_operand, S);
 	if(opcode <= OPCODE_TST || opcode >= OPCODE_CMN) {
 		if(S) {
-			update_N_Z(p, res, op1, shifter_operand);
+			update_N_Z(p, op1, shifter_operand, res);
 		}
 		arm_write_register(p, rd, res);
 	}
