@@ -1,5 +1,9 @@
 .global main
 .text
+
+andd:	
+	and r1, r2
+	mov pc, lr   		@ retour a linstruction apres le branchement
 main:
     mov r1, #1
     mov r2, #3
@@ -20,3 +24,10 @@ main:
     addgt r5,  r5, #1   @ comme Z=0, N=1 et V=0 rien ne se passe (Z doit etre egal a 0 et N doit etre egal a V)
     addle r5,  r5, #1   @ comme Z=0, N=1 et V=0 8 est mis dans r5 (Z doit etre egal a 1 ou N doit etre different a V)
     addal r5,  r5, #1   @ 9 est mis dans r5, inconditionnel
+	bl andd 			@ branchement a andd avec memorisation de ladresse de retour 
+	b end				@ branchement a end
+	sub r3, r1, r2		@ ignoré
+	add r4, r5, r1		@ ignoré
+
+end: 
+	swi 0x123456
