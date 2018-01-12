@@ -4,17 +4,14 @@ Copyright (C) 2011 Guillaume Huard
 Ce programme est libre, vous pouvez le redistribuer et/ou le modifier selon les
 termes de la Licence Publique Générale GNU publiée par la Free Software
 Foundation (version 2 ou bien toute autre version ultérieure choisie par vous).
-
 Ce programme est distribué car potentiellement utile, mais SANS AUCUNE
 GARANTIE, ni explicite ni implicite, y compris les garanties de
 commercialisation ou d'adaptation dans un but spécifique. Reportez-vous à la
 Licence Publique Générale GNU pour plus de détails.
-
 Vous devez avoir reçu une copie de la Licence Publique Générale GNU en même
 temps que ce programme ; si ce n'est pas le cas, écrivez à la Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 États-Unis.
-
 Contact: Guillaume.Huard@imag.fr
 	 Bâtiment IMAG
 	 700 avenue centrale, domaine universitaire
@@ -130,7 +127,8 @@ int store(arm_core p , uint32_t ins, uint8_t source, uint8_t dest, uint32_t addr
 		if (get_bit(ins, 22)){
 		//STRB
 
-			value_byte = (arm_read_register(p, source)) & 0xFF;
+			//value_byte = (arm_read_register(p, source)) & 0xFF;
+			value_byte = (uint8_t) get_bits(arm_read_register(p, source),31,24);
 		} else {
 		//STR
 
@@ -166,7 +164,8 @@ int store(arm_core p , uint32_t ins, uint8_t source, uint8_t dest, uint32_t addr
 	} else {
 	//STRH
 
-		value_half = (arm_read_register(p, source)) & 0xFFFF;
+		//value_half = (arm_read_register(p, source)) & 0xFFFF;
+		value_half = (uint16_t) get_bits(arm_read_register(p, source),31,16);
 		if (get_bit(ins, 24)){
 		//Pre-indexed addressing / offset addressing
 
