@@ -5,8 +5,8 @@ main:
     ldr r1, =donnee
     ldr r5, [r1, +r4, lsl #2]
     mov r6, #0xFF
-    mov r7, #0xFFFF
-    mov r9, #0xFFFFFFFF
+    mov r7, #0xaa
+    mov r9, #0xbb
     @mets dans les adresses 0x2800-0x2808 les valeurs des registres r6,r7 et r9, avec mise a jour de r1
     stmia r1!, {r6, r7, r9}
     ldr r1, =donnee
@@ -42,3 +42,4 @@ donnee:
 fin:
     .word 0xffff6789
     .word 0x11112222
+    
